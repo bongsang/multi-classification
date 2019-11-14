@@ -49,6 +49,7 @@ def data_generator(dataset_train_path, dataset_validation_path, augmentation=Tru
         dataset_train_path,
         # batch_size=20,
         class_mode="categorical",
+        classes=['rock', 'paper', 'scissors'],
         target_size=(150, 150))
 
     validation_generator = valid_data_generator.flow_from_directory(
@@ -84,7 +85,7 @@ class AccCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         if logs is None:
             logs = {}
-        elif logs.get('acc') > 0.9:
+        elif logs.get('acc') > 0.98:
             self.model.stop_training = True
             print(f"\nEarly stopping! Epoch: {epoch} \t Accuracy: {round(logs.get('acc') * 100)}%")
 
