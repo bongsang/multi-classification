@@ -138,6 +138,9 @@ if __name__ == "__main__":
     parser.add_argument('--result_path', default='results')
     args = parser.parse_args()
 
+
+
+
     # Tensorflow GPU setup
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
