@@ -1,6 +1,5 @@
 __author__ = "https://www.linkedin.com/in/bongsang/"
 __license__ = "MIT"
-
 from utils import download
 
 import os
@@ -47,14 +46,11 @@ def data_generator(dataset_train_path, dataset_validation_path, augmentation=Tru
 
     train_generator = train_data_generator.flow_from_directory(
         dataset_train_path,
-        # batch_size=20,
         class_mode="categorical",
-        classes=['rock', 'paper', 'scissors'],
         target_size=(150, 150))
 
     validation_generator = valid_data_generator.flow_from_directory(
         dataset_validation_path,
-        # batch_size=20,
         class_mode="categorical",
         target_size=(150, 150)
     )
@@ -64,7 +60,7 @@ def data_generator(dataset_train_path, dataset_validation_path, augmentation=Tru
 
 def model_design():
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', input_shape=(150, 150, 3)),
         tf.keras.layers.MaxPooling2D(2, 2),
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D(2, 2),
@@ -73,8 +69,8 @@ def model_design():
         tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D(2, 2),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(512, activation='relu'),
         tf.keras.layers.Dropout(rate=0.2),
+        tf.keras.layers.Dense(512, activation='relu'),
         tf.keras.layers.Dense(3, activation='softmax')
     ])
 
@@ -148,7 +144,7 @@ if __name__ == "__main__":
     # ---------------
     model = model_design()
     model.compile(
-        optimizer=RMSprop(lr=1e-4),
+        optimizer=RMSprop(lr=1e-3),
         loss=CategoricalCrossentropy(),
         metrics=['acc'])
 
@@ -165,11 +161,9 @@ if __name__ == "__main__":
 
     history = model.fit_generator(
         train_generator,
-        steps_per_epoch=100,
         epochs=args.epochs,
         validation_data=validation_generator,
-        validation_steps=50,
-        callbacks=[callback],
+        # callbacks=[callback],
         verbose=2
     )
 
@@ -188,15 +182,15 @@ if __name__ == "__main__":
     val_loss = history.history['val_loss']
 
     epochs = range(len(acc))
-    plt.plot(epochs, acc, 'ro', label='Training accuracy')
-    plt.plot(epochs, val_acc, 'bo', label='Validation accuracy')
+    plt.plot(epochs, acc, 'r', label='Training accuracy')
+    plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
     plt.title('Training and validation accuracy')
     plt.legend()
     plt.savefig(join(fig_path, "accuracy.jpg"))
 
     plt.figure()
-    plt.plot(epochs, loss, 'ro', label='Training Loss')
-    plt.plot(epochs, val_loss, 'bo', label='Validation Loss')
+    plt.plot(epochs, loss, 'r', label='Training Loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation Loss')
     plt.title('Training and validation loss')
     plt.legend()
     plt.savefig(join(fig_path, "loss.jpg"))
