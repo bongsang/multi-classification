@@ -1,17 +1,14 @@
 __author__ = "https://www.linkedin.com/in/bongsang/"
 __license__ = "MIT"
+import os
 import requests
 import tqdm  # progress bar
-import os.path
 
 
-def from_url(url, path=None, file=None):
-    if path is not None:
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        filename = os.path.join(path, file)
-    else:
-        filename = os.path.join(".", url.split('/')[-1])
+def from_url(url, path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    filename = os.path.join(path, url.split('/')[-1])
 
     r = requests.get(url, stream=True)
     file_size = int(r.headers['Content-Length'])
@@ -28,7 +25,6 @@ def from_url(url, path=None, file=None):
                 , leave=True  # progressbar stays
         ):
             fp.write(chunk)
-
         fp.close()
 
     return filename

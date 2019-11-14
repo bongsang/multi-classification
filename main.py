@@ -31,30 +31,32 @@ cat_validation_path = join(dataset_path, "validation", "cat")
 dog_validation_path = join(dataset_path, "validation", "dog")
 
 
-def dataset_setup(url):
+def dataset_setup(url, path):
     ## Download from URL
+    download_path = join('.', path)
     if not os.path.exists(download_path):
-        filename = "cats-and-dogs.zip"
-        file = download.from_url(url, path=download_path, file=filename)
+        os.makedirs(download_path)
+
+        file = download.from_url(args.url_test, download_path)
         zfile = zipfile.ZipFile(file, 'r')
         zfile.extractall(download_path)
         zfile.close()
-
-    ## Setup dataset from downloaded data
-    if not os.path.exists(dataset_path):
-        os.makedirs(cat_train_path)
-        os.makedirs(dog_train_path)
-        os.makedirs(cat_validation_path)
-        os.makedirs(dog_validation_path)
-
-        ### Splitting dataset
-        split_rate = .9  # Training: 90%, Testing: 10%
-        dataset.split(cat_download_path, cat_train_path, cat_validation_path, split_rate)
-        dataset.split(dog_download_path, dog_train_path, dog_validation_path, split_rate)
-
-    num_train = len(os.listdir(cat_train_path))
-    num_test = len(os.listdir(cat_validation_path))
-    print(f"The total number of Dataset is {num_train + num_test} (Cats: {num_train}, Dogs: {num_test})")
+    #
+    # ## Setup dataset from downloaded data
+    # if not os.path.exists(dataset_path):
+    #     os.makedirs(cat_train_path)
+    #     os.makedirs(dog_train_path)
+    #     os.makedirs(cat_validation_path)
+    #     os.makedirs(dog_validation_path)
+    #
+    #     ### Splitting dataset
+    #     split_rate = .9  # Training: 90%, Testing: 10%
+    #     dataset.split(cat_download_path, cat_train_path, cat_validation_path, split_rate)
+    #     dataset.split(dog_download_path, dog_train_path, dog_validation_path, split_rate)
+    #
+    # num_train = len(os.listdir(cat_train_path))
+    # num_test = len(os.listdir(cat_validation_path))
+    # print(f"The total number of Dataset is {num_train + num_test} (Cats: {num_train}, Dogs: {num_test})")
 
 
 def data_generator(augmentation=False):
@@ -131,14 +133,14 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(
         description="ex) python main.py --mode=train --epochs=100 --url=\"http://...\"")
-    parser.add_argument('--mode', default='train', choices=['train', 'test'], required=True)
+    parser.add_argument('--mode', default='train', choices=['train', 'test'], required=False)
     parser.add_argument('--epochs', type=int, default=200)
-    parser.add_argument('--url', default="https://download.microsoft.com/download/3/E/1/3E1C3F21-ECDB-4869-8368-6DEBA77B919F/kagglecatsanddogs_3367a.zip")
+    parser.add_argument('--url_train', default="https://storage.googleapis.com/laurencemoroney-blog.appspot.com/rps.zip")
+    parser.add_argument('--url_test', default="https://storage.googleapis.com/laurencemoroney-blog.appspot.com/rps-test-set.zip")
+    parser.add_argument('--download_path', default='download')
     parser.add_argument('--test_path', default='tests')
     parser.add_argument('--result_path', default='results')
     args = parser.parse_args()
-
-
 
 
     # Tensorflow GPU setup
@@ -157,86 +159,86 @@ if __name__ == "__main__":
     # ----------------------------------------
     # Download data from URL and setup dataset
     # ----------------------------------------
-    dataset_setup(args.url)
-
-    # ---------------
-    # model designing
-    # ---------------
-    model = model_design()
-    model.compile(
-        optimizer=RMSprop(lr=1e-4),
-        loss=BinaryCrossentropy(),
-        metrics=['acc'])
-
-    model.summary()
-
-    # -------------
-    # model fitting
-    # -------------
-    print(f"args.mode={args.mode}")
-
-    fig_path = join(".", args.result_path)
-    if not os.path.exists(fig_path):
-        os.makedirs(fig_path)
-
-    if 'train' in args.mode:
-        print("###### Model training ######")
-        callback = AccCallback()
-        train_generator, validation_generator = data_generator(augmentation=True)
-
-        history = model.fit_generator(
-            train_generator,
-            steps_per_epoch=100,
-            epochs=args.epochs,
-            validation_data=validation_generator,
-            validation_steps=50,
-            callbacks=[callback],
-            verbose=2
-        )
-
-        # ----------------------
-        # Train history plotting
-        # ----------------------
-        acc = history.history['acc']
-        val_acc = history.history['val_acc']
-        loss = history.history['loss']
-        val_loss = history.history['val_loss']
-
-        epochs = range(len(acc))
-        plt.plot(epochs, acc, 'ro', label='Training accuracy')
-        plt.plot(epochs, val_acc, 'bo', label='Validation accuracy')
-        plt.title('Training and validation accuracy')
-        plt.legend()
-        plt.savefig(join(fig_path, "accuracy.jpg"))
-
-        plt.figure()
-        plt.plot(epochs, loss, 'ro', label='Training Loss')
-        plt.plot(epochs, val_loss, 'bo', label='Validation Loss')
-        plt.title('Training and validation loss')
-        plt.legend()
-        plt.savefig(join(fig_path, "loss.jpg"))
-    else:
-        print("###### Model testing ######")
-        test_path = join(".", args.test_path)
-        test_files = dataset.test(test_path)
-
-        for file in test_files:
-            test_image = image.load_img(join(test_path, file), target_size=(150, 150))
-            x = image.img_to_array(test_image)
-            x = np.expand_dims(x, axis=0)
-            images = np.vstack([x])
-            classes = model.predict(images, batch_size=10)
-
-            if classes[0] > 0.5:
-                predition = "Prediction = Dog!"
-                print(f"{file} is a dog.")
-            else:
-                predition = "Prediction = Cat!"
-                print(f"{file} is a cat.")
-
-            plt.imshow(test_image)
-            plt.title(predition)
-            plt.savefig(join(fig_path, "prediction_"+file))
-
-
-
+    dataset_setup(args.url_train, args.download_path)
+    #
+    # # ---------------
+    # # model designing
+    # # ---------------
+    # model = model_design()
+    # model.compile(
+    #     optimizer=RMSprop(lr=1e-4),
+    #     loss=BinaryCrossentropy(),
+    #     metrics=['acc'])
+    #
+    # model.summary()
+    #
+    # # -------------
+    # # model fitting
+    # # -------------
+    # print(f"args.mode={args.mode}")
+    #
+    # fig_path = join(".", args.result_path)
+    # if not os.path.exists(fig_path):
+    #     os.makedirs(fig_path)
+    #
+    # if 'train' in args.mode:
+    #     print("###### Model training ######")
+    #     callback = AccCallback()
+    #     train_generator, validation_generator = data_generator(augmentation=True)
+    #
+    #     history = model.fit_generator(
+    #         train_generator,
+    #         steps_per_epoch=100,
+    #         epochs=args.epochs,
+    #         validation_data=validation_generator,
+    #         validation_steps=50,
+    #         callbacks=[callback],
+    #         verbose=2
+    #     )
+    #
+    #     # ----------------------
+    #     # Train history plotting
+    #     # ----------------------
+    #     acc = history.history['acc']
+    #     val_acc = history.history['val_acc']
+    #     loss = history.history['loss']
+    #     val_loss = history.history['val_loss']
+    #
+    #     epochs = range(len(acc))
+    #     plt.plot(epochs, acc, 'ro', label='Training accuracy')
+    #     plt.plot(epochs, val_acc, 'bo', label='Validation accuracy')
+    #     plt.title('Training and validation accuracy')
+    #     plt.legend()
+    #     plt.savefig(join(fig_path, "accuracy.jpg"))
+    #
+    #     plt.figure()
+    #     plt.plot(epochs, loss, 'ro', label='Training Loss')
+    #     plt.plot(epochs, val_loss, 'bo', label='Validation Loss')
+    #     plt.title('Training and validation loss')
+    #     plt.legend()
+    #     plt.savefig(join(fig_path, "loss.jpg"))
+    # else:
+    #     print("###### Model testing ######")
+    #     test_path = join(".", args.test_path)
+    #     test_files = dataset.test(test_path)
+    #
+    #     for file in test_files:
+    #         test_image = image.load_img(join(test_path, file), target_size=(150, 150))
+    #         x = image.img_to_array(test_image)
+    #         x = np.expand_dims(x, axis=0)
+    #         images = np.vstack([x])
+    #         classes = model.predict(images, batch_size=10)
+    #
+    #         if classes[0] > 0.5:
+    #             predition = "Prediction = Dog!"
+    #             print(f"{file} is a dog.")
+    #         else:
+    #             predition = "Prediction = Cat!"
+    #             print(f"{file} is a cat.")
+    #
+    #         plt.imshow(test_image)
+    #         plt.title(predition)
+    #         plt.savefig(join(fig_path, "prediction_"+file))
+    #
+    #
+    #
